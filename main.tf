@@ -1,3 +1,6 @@
+provider "aws" {
+  region = "eu-west-2"
+}
 resource "aws_launch_configuration" "webcluster" {
   image_id = "ami-0596aab74a1ce3983"
   instance_type = "t2.micro"
@@ -16,7 +19,7 @@ lifecycle {
 
 resource "aws_autoscaling_group" "webcluster" {
  launch_configuration = aws_launch_configuration.webcluster.name
- vpc_zone_identifier = data.aws_subnet_ids.default.ids
+ availability_zones = data.aws_availability_zones.all.names
 
  min_size = 2
  max_size = 10
