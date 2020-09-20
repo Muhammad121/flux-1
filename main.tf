@@ -1,9 +1,40 @@
-
-resource "aws_instance" "web" {
-  ami           = "ami-0596aab74a1ce3983"
+resource "aws_launch_configuration" "webcluster" {
+  image_id = "ami-0596aab74a1ce3983"
   instance_type = "t2.micro"
+  security_groups = [aws_security_group.instance.id]
 
-  tags = {
-    Name = "Flux-web-server"
+  user_data = <<-EOF
+              #!/bin/bash
+              echo "Hello World" > index.html
+              nohup busybox httpd -f -p ${var.server_port} &
+              EOF
+lifecycle {
+  create_before_destroy = true
+}
+  }
+
+
+resource "aws_autoscaling_group" "webcluster" {
+ launch_configuration = aws_launch_configuration.webcluster.name
+ vpc_zone_identifier = data.aws_subnet_ids.default.ids
+
+ min_size = 2
+ max_size = 10
+
+ tag {
+   key = "Name"
+   value = "asg-webcluster"
+   propagate_at_launch = true
+ }
+}
+
+resource "aws_security_group" "instance" {
+  name = "Webcluster-SG"
+
+  ingress {
+   from_port = var.server_port
+   to_port = var.server_port
+   protocol = "tcp"
+   cidr_blocks = ["0.0.0.0/0"]
   }
 }
